@@ -49,6 +49,13 @@ public class ArmorHudConfig {
     public int bgOpacity = 55;
     public boolean bgBorder = true;
 
+    // auto-wymiana zbroi
+    public boolean autoSwap = false;
+    public int swapPercent = 10;        // wymiana gdy zostało <= tyle % wytrzymałości
+    public int swapDelay = 8;           // opóźnienie między wymianami (ticki)
+    public boolean swapBest = true;     // true = najlepszy zamiennik, false = pierwszy znaleziony
+    public boolean swapNoReplacement = true; // zdejmij część nawet gdy nie ma zamiennika
+
     public void resetPositions() {
         dx = DEFAULT_DX.clone();
         dy = DEFAULT_DY.clone();
@@ -75,6 +82,8 @@ public class ArmorHudConfig {
         if (dx == null || dy == null || dx.length != 4 || dy.length != 4) resetPositions();
         bgColor &= 0xFFFFFF;
         bgOpacity = Math.max(0, Math.min(100, bgOpacity));
+        swapPercent = Math.max(1, Math.min(50, swapPercent));
+        swapDelay = Math.max(2, Math.min(20, swapDelay));
     }
 
     // ---- zapis / odczyt ----

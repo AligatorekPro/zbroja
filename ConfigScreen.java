@@ -18,7 +18,7 @@ public class ConfigScreen extends Screen {
         ArmorHudConfig cfg = ArmorHudConfig.get();
         int bw = 124, bh = 20, gx = 6, gy = 4;
         pw = bw * 2 + gx + 24;
-        ph = 34 + 5 * (bh + gy) + 6;
+        ph = 34 + 6 * (bh + gy) + 6;
         px = (width - pw) / 2;
         py = 6;
         int lx = px + 12;
@@ -63,9 +63,15 @@ public class ConfigScreen extends Screen {
 
         // rząd 5
         addDrawableChild(new NeonButton(lx, y, bw, bh,
+                Text.literal("Auto-wymiana..."),
+                () -> this.client.setScreen(new SwapScreen(this))));
+        addDrawableChild(new NeonButton(rx, y, bw, bh,
                 Text.literal("Reset pozycji"),
                 () -> cfg.resetPositions()));
-        addDrawableChild(new NeonButton(rx, y, bw, bh, Text.literal("Gotowe"), this::close));
+        y += bh + gy;
+
+        // rząd 6
+        addDrawableChild(new NeonButton(lx, y, bw * 2 + gx, bh, Text.literal("Gotowe"), this::close));
     }
 
     @Override

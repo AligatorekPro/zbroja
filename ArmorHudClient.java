@@ -29,6 +29,8 @@ public class ArmorHudClient implements ClientModInitializer {
             }
         });
 
+        ClientTickEvents.END_CLIENT_TICK.register(AutoSwap::tick);
+
         HudRenderCallback.EVENT.register((ctx, tickCounter) -> {
             MinecraftClient mc = MinecraftClient.getInstance();
             ArmorHudConfig cfg = ArmorHudConfig.get();
