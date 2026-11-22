@@ -1,7 +1,5 @@
 package dev.alek.armorhud;
 
-import dev.alek.armorhud.ArmorHudConfig.Layout;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
@@ -20,7 +18,7 @@ public class ConfigScreen extends Screen {
         ArmorHudConfig cfg = ArmorHudConfig.get();
         int bw = 124, bh = 20, gx = 6, gy = 4;
         pw = bw * 2 + gx + 24;
-        ph = 34 + 6 * (bh + gy) + 6;
+        ph = 34 + 5 * (bh + gy) + 6;
         px = (width - pw) / 2;
         py = 6;
         int lx = px + 12;
@@ -41,48 +39,33 @@ public class ConfigScreen extends Screen {
                 Text.literal("Pasek: " + (cfg.showBar ? "TAK" : "NIE")),
                 () -> { cfg.showBar = !cfg.showBar; clearAndInit(); }));
         addDrawableChild(new NeonButton(rx, y, bw, bh,
-                Text.literal("Układ: " + cfg.layout.label),
-                () -> { cfg.layout = cfg.layout.next(); clearAndInit(); }));
+                Text.literal("Kolory: " + cfg.scheme.label),
+                () -> { cfg.scheme = cfg.scheme.next(); clearAndInit(); }));
         y += bh + gy;
 
         // rząd 3
         addDrawableChild(new NeonButton(lx, y, bw, bh,
-                Text.literal("Kolory: " + cfg.scheme.label),
-                () -> { cfg.scheme = cfg.scheme.next(); clearAndInit(); }));
-        addDrawableChild(new NeonButton(rx, y, bw, bh,
                 Text.literal("Ustaw zbroję"),
                 () -> this.client.setScreen(new PlacementScreen(this))));
+        addDrawableChild(new NeonButton(rx, y, bw, bh,
+                Text.literal("Tło..."),
+                () -> this.client.setScreen(new BackgroundScreen(this))));
         y += bh + gy;
 
         // rząd 4 (suwaki)
         addDrawableChild(new NeonSlider(lx, y, bw, bh, 0.5f, 3f, 0.05f, cfg.scale,
                 v -> String.format("Rozmiar: %.2f", v),
                 v -> cfg.scale = v));
-        addDrawableChild(new NeonSlider(rx, y, bw, bh, 0f, 500f, 2f, cfg.gap,
-                v -> "Odstęp środka: " + Math.round(v),
-                v -> cfg.gap = Math.round(v)));
+        addDrawableChild(new NeonSlider(rx, y, bw, bh, 0f, 50f, 1f, cfg.warnPercent,
+                v -> Math.round(v) == 0 ? "Miganie: wyłączone" : "Miganie poniżej " + Math.round(v) + "%",
+                v -> cfg.warnPercent = Math.round(v)));
         y += bh + gy;
 
         // rząd 5
-        addDrawableChild(new NeonSlider(lx, y, bw, bh, 0f, 50f, 1f, cfg.warnPercent,
-                v -> Math.round(v) == 0 ? "Miganie: wyłączone" : "Miganie poniżej " + Math.round(v) + "%",
-                v -> cfg.warnPercent = Math.round(v)));
-        addDrawableChild(new NeonButton(rx, y, bw, bh,
-                Text.literal("Po bokach hotbara"),
-                () -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
-                    int h = mc.getWindow().getScaledHeight();
-                    cfg.layout = Layout.SPLIT;
-                    cfg.posX = 0.5f;
-                    float ch = ArmorHudRenderer.cellHeight(cfg) * cfg.scale;
-                    cfg.posY = (h - 4 - ch / 2f) / h;
-                    cfg.gap = Math.round(246f / cfg.scale);
-                    clearAndInit();
-                }));
-        y += bh + gy;
-
-        // rząd 6
-        addDrawableChild(new NeonButton(lx, y, bw * 2 + gx, bh, Text.literal("Gotowe"), this::close));
+        addDrawableChild(new NeonButton(lx, y, bw, bh,
+                Text.literal("Reset pozycji"),
+                () -> cfg.resetPositions()));
+        addDrawableChild(new NeonButton(rx, y, bw, bh, Text.literal("Gotowe"), this::close));
     }
 
     @Override

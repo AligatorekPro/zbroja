@@ -36,7 +36,7 @@ public class ArmorHudClient implements ClientModInitializer {
             if (mc.currentScreen instanceof PlacementScreen) return;
 
             ItemStack[] stacks;
-            if (mc.currentScreen instanceof ConfigScreen) {
+            if (mc.currentScreen instanceof ConfigScreen || mc.currentScreen instanceof BackgroundScreen) {
                 stacks = ArmorHudRenderer.samples();
             } else {
                 stacks = new ItemStack[]{
@@ -48,7 +48,7 @@ public class ArmorHudClient implements ClientModInitializer {
             }
             int w = ctx.getScaledWindowWidth();
             int h = ctx.getScaledWindowHeight();
-            ArmorHudRenderer.render(ctx, stacks, cfg.posX * w, cfg.posY * h, cfg.scale, cfg);
+            ArmorHudRenderer.render(ctx, stacks, w, h, cfg, -1);
         });
     }
 }

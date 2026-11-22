@@ -1,6 +1,5 @@
 package dev.alek.armorhud;
 
-import dev.alek.armorhud.ArmorHudConfig.Layout;
 import dev.alek.armorhud.ArmorHudConfig.TextMode;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -26,68 +25,68 @@ public final class ArmorHudRenderer {
         return 16 + ((text || c.showBar) ? 1 : 0) + (c.showBar ? 4 : 0) + (text ? 9 : 0);
     }
 
-    /** stacks: [hełm, klata, spodnie, buty]; cx/cy = środek HUD-u w pikselach ekranu. */
-    public static void render(DrawContext ctx, ItemStack[] stacks, float cx, float cy, float scale, ArmorHudConfig c) {
+    public static float centerX(ArmorHudConfig c, int i, int screenW) {
+        return screenW / 2f + c.dx[i];
+    }
+
+    public static float centerY(ArmorHudConfig c, int i, int screenH) {
+        return screenH - c.dy[i];
+    }
+
+    /** połowa szerokości / wysokości klikalnego pola (bez skali) */
+    public static float halfW(ArmorHudConfig c) { return cellWidth(c) / 2f + 3f; }
+    public static float halfH(ArmorHudConfig c) { return cellHeight(c) / 2f + 3f; }
+
+    /** stacks: [hełm, klata, spodnie, buty]; selected = indeks podświetlanej części albo -1 */
+    public static void render(DrawContext ctx, ItemStack[] stacks, int screenW, int screenH,
+                              ArmorHudConfig c, int selected) {
         TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        boolean side = c.layout == Layout.VERTICAL;
-        int cw = cellWidth(c);
-        int ch = cellHeight(c);
-        float[] px = new float[4];
-        float[] py = new float[4];
-
-        switch (c.layout) {
-            case HORIZONTAL:
-                for (int i = 0; i < 4; i++) {
-                    px[i] = -2f * cw + i * cw;
-                    py[i] = -ch / 2f;
-                }
-                break;
-            case VERTICAL: {
-                int rowW = 19 + cw;
-                int rowH = c.showBar ? 21 : 18;
-                for (int i = 0; i < 4; i++) {
-                    px[i] = -rowW / 2f;
-                    py[i] = -2f * rowH + i * rowH;
-                }
-                break;
-            }
-            default: { // SPLIT: hełm+klata po lewej, spodnie+buty po prawej
-                float half = c.gap / 2f;
-                px[0] = -half - 2f * cw;
-                px[1] = -half - cw;
-                px[2] = half;
-                px[3] = half + cw;
-                for (int i = 0; i < 4; i++) py[i] = -ch / 2f;
-                break;
-            }
-        }
-
         MatrixStack m = ctx.getMatrices();
-        m.push();
-        m.translate(cx, cy, 0f);
-        m.scale(scale, scale, 1f);
         for (int i = 0; i < 4; i++) {
             ItemStack s = stacks[i];
             if (s == null || s.isEmpty()) continue;
-            cell(ctx, tr, s, px[i], py[i], cw, side, c);
+            m.push();
+            m.translate(centerX(c, i, screenW), centerY(c, i, screenH), 0f);
+            m.scale(c.scale, c.scale, 1f);
+            cell(ctx, tr, s, c, i == selected);
+            m.pop();
         }
-        m.pop();
     }
 
-    private static void cell(DrawContext ctx, TextRenderer tr, ItemStack s, float px, float py,
-                             int cw, boolean side, ArmorHudConfig c) {
-        int ix = Math.round(side ? px : px + (cw - 16) / 2f);
-        int iy = Math.round(py);
-        ctx.drawItem(s, ix, iy);
-        if (!s.isDamageable()) return;
+    private static void cell(DrawContext ctx, TextRenderer tr, ItemStack s, ArmorHudConfig c, boolean selected) {
+        int cw = cellWidth(c);
+        int ch = cellHeight(c);
+        int x1 = Math.round(-cw / 2f) - 2;
+        int y1 = Math.round(-ch / 2f) - 2;
+        int x2 = x1 + cw + 4;
+        int y2 = y1 + ch + 4;
+        int ix = -8;
+        int iy = Math.round(-ch / 2f);
 
-        int max = s.getMaxDamage();
-        int left = max - s.getDamage();
-        float p = Math.max(0f, Math.min(1f, left / (float) max));
-        int color = c.colorFor(p);
-        if (c.warnPercent > 0 && p * 100f <= c.warnPercent && (System.currentTimeMillis() / 300L) % 2L == 1L) {
+        boolean dmg = s.isDamageable();
+        float p = 1f;
+        int left = 0, max = 0;
+        if (dmg) {
+            max = s.getMaxDamage();
+            left = max - s.getDamage();
+            p = Math.max(0f, Math.min(1f, left / (float) max));
+        }
+        int color = dmg ? c.colorFor(p) : c.scheme.mid;
+        if (dmg && c.warnPercent > 0 && p * 100f <= c.warnPercent
+                && (System.currentTimeMillis() / 300L) % 2L == 1L) {
             color = 0xFFFFFF;
         }
+
+        // tło
+        if (c.bgEnabled) {
+            int a = Math.round(c.bgOpacity * 255f / 100f);
+            ctx.fill(x1, y1, x2, y2, (a << 24) | (c.bgColor & 0xFFFFFF));
+            if (c.bgBorder) Theme.outline(ctx, x1, y1, x2, y2, 0xB0000000 | color);
+        }
+        if (selected) Theme.glow(ctx, x1, y1, x2, y2, Theme.PINK, 2);
+
+        ctx.drawItem(s, ix, iy);
+        if (!dmg) return;
 
         if (c.showBar) {
             int by = iy + 17;
@@ -98,14 +97,8 @@ public final class ArmorHudRenderer {
         String t = text(c.textMode, left, max, p);
         if (t != null) {
             int tw = tr.getWidth(t);
-            int tx, ty;
-            if (side) {
-                tx = ix + 19;
-                ty = iy + 4;
-            } else {
-                tx = Math.round(px + cw / 2f - tw / 2f);
-                ty = iy + 17 + (c.showBar ? 4 : 0);
-            }
+            int tx = Math.round(-tw / 2f);
+            int ty = iy + 17 + (c.showBar ? 4 : 0);
             ctx.drawText(tr, t, tx, ty, 0xFF000000 | color, true);
         }
     }

@@ -17,13 +17,6 @@ public class ArmorHudConfig {
         public TextMode next() { return values()[(ordinal() + 1) % values().length]; }
     }
 
-    public enum Layout {
-        SPLIT("Rozdzielony"), HORIZONTAL("Poziomy"), VERTICAL("Pionowy");
-        public final String label;
-        Layout(String label) { this.label = label; }
-        public Layout next() { return values()[(ordinal() + 1) % values().length]; }
-    }
-
     public enum ColorScheme {
         NEON("Neonowy", 0x00FFC8, 0xB14DFF, 0xFF1F6B),
         PINK("Różowy", 0xFF8AE2, 0xC44DFF, 0xFF2A55),
@@ -36,16 +29,30 @@ public class ArmorHudConfig {
         public ColorScheme next() { return values()[(ordinal() + 1) % values().length]; }
     }
 
+    // pozycje każdej części: [hełm, klata, spodnie, buty]
+    // dx = przesunięcie w prawo od środka ekranu, dy = wysokość od dołu ekranu (piksele GUI)
+    public static final float[] DEFAULT_DX = {-145f, -145f, 145f, 145f};
+    public static final float[] DEFAULT_DY = {52f, 20f, 52f, 20f};
+
     public boolean enabled = true;
     public TextMode textMode = TextMode.PERCENT;
     public boolean showBar = true;
-    public Layout layout = Layout.SPLIT;
     public ColorScheme scheme = ColorScheme.NEON;
     public float scale = 1.0f;
-    public float posX = 0.5f;
-    public float posY = 0.80f;
-    public int gap = 0;
+    public float[] dx = DEFAULT_DX.clone();
+    public float[] dy = DEFAULT_DY.clone();
     public int warnPercent = 10;
+
+    // tło za każdą częścią
+    public boolean bgEnabled = true;
+    public int bgColor = 0x14081F;
+    public int bgOpacity = 55;
+    public boolean bgBorder = true;
+
+    public void resetPositions() {
+        dx = DEFAULT_DX.clone();
+        dy = DEFAULT_DY.clone();
+    }
 
     public int colorFor(float p) {
         if (p >= 0.5f) return lerp(scheme.mid, scheme.high, (p - 0.5f) * 2f);
@@ -62,13 +69,12 @@ public class ArmorHudConfig {
 
     private void sanitize() {
         if (textMode == null) textMode = TextMode.PERCENT;
-        if (layout == null) layout = Layout.SPLIT;
         if (scheme == null) scheme = ColorScheme.NEON;
         scale = Math.max(0.5f, Math.min(3f, scale));
-        posX = Math.max(0f, Math.min(1f, posX));
-        posY = Math.max(0f, Math.min(1f, posY));
-        gap = Math.max(0, Math.min(500, gap));
         warnPercent = Math.max(0, Math.min(50, warnPercent));
+        if (dx == null || dy == null || dx.length != 4 || dy.length != 4) resetPositions();
+        bgColor &= 0xFFFFFF;
+        bgOpacity = Math.max(0, Math.min(100, bgOpacity));
     }
 
     // ---- zapis / odczyt ----
