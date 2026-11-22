@@ -19,7 +19,7 @@ public class ArmorHudClient implements ClientModInitializer {
         ArmorHudConfig.load();
 
         openKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.armorhud.open", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, "key.categories.armorhud"));
+                "Armor HUD - ustawienia", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, "Armor HUD"));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openKey.wasPressed()) {
